@@ -67,9 +67,9 @@ export function Library({ books, onOpen, onDelete, onAddFile, onAddFolder, onAdd
             <div className="empty-orb"><IconBook size={38} /></div>
             <h2 style={{ fontSize: 24, margin: '0 0 8px', letterSpacing: '-0.02em' }}>Your library is empty</h2>
             <p style={{ color: 'var(--text-faint)', margin: '0 0 24px', lineHeight: 1.6 }}>
-              Add an EPUB or PDF and MnemoReader will read it aloud — extracting the text, finding
-              chapters, and vectorizing it into your Library vault. Text-based formats (EPUB, TXT, HTML)
-              need no OCR.
+              Add a book in any format — EPUB, PDF, DOCX, RTF, TXT, HTML, Markdown — and MnemoReader
+              will read it aloud, extracting the text, finding chapters, and vectorizing it into your
+              Library vault. Most formats (EPUB, DOCX, TXT, HTML…) need no OCR.
             </p>
             <div
               className={`dropzone ${drag ? 'drag' : ''}`}

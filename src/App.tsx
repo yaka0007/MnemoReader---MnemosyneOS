@@ -332,7 +332,7 @@ export default function App() {
               <div className="brand-mark"><IconBook size={22} /></div>
               <div>
                 <div className="brand-name">Mnemo<b>Reader</b></div>
-                <div className="brand-sub">EPUB · PDF library · voice reading</div>
+                <div className="brand-sub">EPUB · PDF · DOCX & more · voice reading</div>
               </div>
             </div>
             <div className="topbar-spacer" />

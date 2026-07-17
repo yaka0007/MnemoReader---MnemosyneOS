@@ -5,9 +5,12 @@
   "category": "Research",
   "vendor": "Mnemosyne Labs",
   "license": "MIT",
-  "description": "A living PDF library with voice reading. Drop a PDF (or a whole folder), MnemoReader extracts and vectorizes it into a Library vault, auto-detects chapters, and reads it aloud with word-synced karaoke highlighting using the Mnemosyne voice engine.",
+  "description": "A living book library with voice reading. Drop an EPUB, PDF, DOCX, TXT, HTML, Markdown (or a whole folder) and MnemoReader extracts and vectorizes it into a Library vault, auto-detects chapters, and reads it aloud with word-synced karaoke highlighting using the Mnemosyne voice engine.",
   "keywords": [
+    "epub",
     "pdf",
+    "docx",
+    "ebook",
     "library",
     "reader",
     "tts",
