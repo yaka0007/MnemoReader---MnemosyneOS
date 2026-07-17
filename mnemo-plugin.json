@@ -1,0 +1,38 @@
+{
+  "name": "@mnemosyne-plugins/mnemo-reader",
+  "displayName": "MnemoReader",
+  "version": "1.0.0",
+  "category": "Research",
+  "vendor": "Mnemosyne Labs",
+  "license": "MIT",
+  "description": "A living PDF library with voice reading. Drop a PDF (or a whole folder), MnemoReader extracts and vectorizes it into a Library vault, auto-detects chapters, and reads it aloud with word-synced karaoke highlighting using the Mnemosyne voice engine.",
+  "keywords": [
+    "pdf",
+    "library",
+    "reader",
+    "tts",
+    "voice",
+    "audiobook",
+    "accessibility"
+  ],
+  "permissions": [
+    "vault:read",
+    "vault:write",
+    "model:infer",
+    "dialog:open",
+    "shell:open"
+  ],
+  "updateStrategy": "git",
+  "entrypoints": {
+    "renderer": "index.html"
+  },
+  "widgets": [
+    {
+      "id": "mnemo-reader-main",
+      "name": "MnemoReader",
+      "route": "index.html",
+      "defaultWidth": 1180,
+      "defaultHeight": 840
+    }
+  ]
+}
