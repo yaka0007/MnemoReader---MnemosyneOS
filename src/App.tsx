@@ -11,7 +11,9 @@ import { Library } from './components/Library';
 import { Reader } from './components/Reader';
 import { Toasts, type ToastMsg } from './components/Toast';
 import { ImportOverlay, type ImportJob } from './components/ImportOverlay';
+import { ConfirmDelete } from './components/ConfirmDelete';
 import { IconBook } from './components/Icons';
+import { saveText, loadText, deleteText } from './lib/textStore';
 
 const SUPPORTED = ['epub', 'pdf', 'docx', 'rtf', 'txt', 'md', 'markdown', 'rst', 'csv', 'htm', 'html', 'org'];
 const basename = (p: string) => p.split(/[\\/]/).pop() || p;
@@ -30,6 +32,8 @@ export default function App() {
   const [reader, setReader] = useState<string | null>(null);
   const [toasts, setToasts] = useState<ToastMsg[]>([]);
   const [importJob, setImportJob] = useState<ImportJob | null>(null);
+  // Book awaiting deletion confirmation (the validation modal).
+  const [confirmDelete, setConfirmDelete] = useState<Book | null>(null);
   // Bumped after a Deep-OCR re-extract to remount the reader with the fresh text.
   const [reloadNonce, setReloadNonce] = useState(0);
   // Name of this app's walled-off sandbox vault (`APP-MNEMO-READER`) once ensured.
@@ -164,6 +168,9 @@ export default function App() {
         ? chaptersFromMarks(res.data.chapters!, text.length, offsets)
         : detectChapters(text, offsets);
       loadedCache.current.set(id, { bookId: id, text, sentences, sentenceOffsets: offsets });
+      // Durable copy: the book must stay readable even if the source file is
+      // later moved or deleted (a library outlives its sources).
+      await saveText(id, text);
       patchBook(id, {
         sentenceCount: sentences.length, chapters, truncated: res.data.truncated, ingest: 'vectorizing',
       });
@@ -175,14 +182,16 @@ export default function App() {
       const chunks = chunkForIngest(sentences);
       let archived = 0;
       for (const c of chunks) {
-        try { await bridge.ingest(LIBRARY_VAULT, c); archived++; }
+        try { await bridge.ingest(LIBRARY_VAULT, c, id); archived++; }
         catch (err) { console.warn('[MnemoReader] ingest chunk failed', err); }
       }
       patchBook(id, { ingest: 'archived', archived: archived > 0 });
       notify('ok', `“${title}” — ${chapters.length} chapters ready. Tap to read.`);
       return { ok: true };
     } catch (err) {
-      const msg = err instanceof Error ? err.message : String(err);
+      let msg = err instanceof Error ? err.message : String(err);
+      // A missing source file deserves a human explanation, not a raw errno.
+      if (/ENOENT/i.test(msg)) msg = `The source file is no longer at its import location (moved, renamed or deleted?): ${filePath}`;
       console.error('[MnemoReader] ingest failed for', filePath, '→', msg, err);
       patchBook(id, { ingest: 'error', ingestError: msg });
       notify('err', `${title}: ${msg}`);
@@ -280,6 +289,22 @@ export default function App() {
     // A failed book: tapping it retries the import rather than dead-ending.
     if (book.ingest === 'error') { notify('info', `Retrying “${book.title}”…`); await processInto(book.id, book.filePath, book.title); return; }
     if (loadedCache.current.has(book.id)) { setReader(book.id); return; }
+
+    // Durable cache first: a cached book opens instantly and stays readable even
+    // when the source file has since been moved or deleted.
+    const cachedText = await loadText(book.id);
+    if (cachedText) {
+      const { sentences, offsets } = splitSentences(cachedText);
+      loadedCache.current.set(book.id, { bookId: book.id, text: cachedText, sentences, sentenceOffsets: offsets });
+      if (!book.chapters.length || book.sentenceCount !== sentences.length) {
+        patchBook(book.id, { chapters: detectChapters(cachedText, offsets), sentenceCount: sentences.length });
+      }
+      setReader(book.id);
+      return;
+    }
+
+    // No cache (imported before the durable cache existed) → extract from the
+    // source file, and backfill the cache so this book is durable from now on.
     if (!isFramed()) { notify('err', 'Open MnemoReader inside Mnemosyne OS to read this book.'); return; }
     notify('info', `Opening “${book.title}”…`);
     try {
@@ -287,6 +312,7 @@ export default function App() {
       if (!res?.success || !res.data) throw new Error(res?.error || 'Extraction failed');
       const { sentences, offsets } = splitSentences(res.data.text);
       loadedCache.current.set(book.id, { bookId: book.id, text: res.data.text, sentences, sentenceOffsets: offsets });
+      await saveText(book.id, res.data.text);
       if (!book.chapters.length || book.sentenceCount !== sentences.length) {
         const chapters = (res.data.chapters?.length ?? 0) >= 3
           ? chaptersFromMarks(res.data.chapters!, res.data.text.length, offsets)
@@ -295,17 +321,24 @@ export default function App() {
       }
       setReader(book.id);
     } catch (err) {
-      notify('err', `Could not open: ${err instanceof Error ? err.message : String(err)}`);
+      const raw = err instanceof Error ? err.message : String(err);
+      notify('err', /ENOENT/i.test(raw)
+        ? `The source file is no longer at its import location (moved, renamed or deleted?). Re-add the book from where it lives now: ${book.filePath}`
+        : `Could not open: ${raw}`);
     }
   }, [notify, patchBook, processInto]);
 
-  // Right-click removes immediately (the sandboxed iframe blocks window.confirm();
-  // the original file on disk is never touched, so this is safe + reversible by re-adding).
+  // Right-click asks for confirmation (the sandboxed iframe blocks window.confirm(),
+  // so a dedicated modal states exactly what gets deleted and what stays).
+  const requestDelete = useCallback((book: Book) => { setConfirmDelete(book); }, []);
+
   const deleteBook = useCallback((book: Book) => {
+    setConfirmDelete(null);
     loadedCache.current.delete(book.id);
+    void deleteText(book.id);                      // erase the durable local copy
     setBooks(prev => prev.filter(b => b.id !== book.id));
     if (reader === book.id) setReader(null);
-    notify('info', `Removed “${book.title}”.`);
+    notify('info', `Removed “${book.title}”. Your archived memory is untouched.`);
   }, [reader, setBooks, notify]);
 
   const activeBook = reader ? books.find(b => b.id === reader) : null;
@@ -341,7 +374,7 @@ export default function App() {
           <Library
             books={books}
             onOpen={openBook}
-            onDelete={deleteBook}
+            onDelete={requestDelete}
             onAddFile={addFile}
             onAddFolder={addFolder}
             onAddUrl={addUrl}
@@ -351,6 +384,7 @@ export default function App() {
         </>
       )}
       {importJob && <ImportOverlay job={importJob} onClose={() => setImportJob(null)} />}
+      {confirmDelete && <ConfirmDelete book={confirmDelete} onCancel={() => setConfirmDelete(null)} onConfirm={deleteBook} />}
       <Toasts items={toasts} />
     </div>
   );

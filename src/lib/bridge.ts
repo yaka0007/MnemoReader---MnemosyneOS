@@ -92,8 +92,10 @@ export const bridge = {
     sdk.invoke<{ success: boolean; manifest?: { path?: string; id?: string }; error?: string }>('vault.create', opts),
 
   /** Vectorize + archive one chunk of book text into the Library vault (SHA-256 dedup, host side). */
-  ingest: (vault: string, content: string) =>
-    sdk.invoke<{ chronicleId?: string }>('reader.ingest', { vault, content }),
+  // `sourceRef` (the book id) tags every archived chunk so a future host-gated
+  // "forget this book's memory" flow can target them.
+  ingest: (vault: string, content: string, sourceRef?: string) =>
+    sdk.invoke<{ chronicleId?: string }>('reader.ingest', { vault, content, ...(sourceRef ? { sourceRef } : {}) }),
 
   // ── App sandbox vault (doc 58) ───────────────────────────────────────────
   // A walled-off `APP-MNEMO-READER` vault holds one SOCIAL_CONTACT chronicle
