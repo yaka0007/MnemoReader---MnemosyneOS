@@ -3,9 +3,15 @@
   "displayName": "MnemoReader",
   "version": "1.0.1",
   "category": "Research",
+  "icon": "icon.svg",
   "vendor": "Mnemosyne Labs",
   "license": "MIT",
   "description": "A living book library with voice reading. Drop an EPUB, PDF, DOCX, TXT, HTML, Markdown (or a whole folder) and MnemoReader extracts and vectorizes it into a Library vault, auto-detects chapters, and reads it aloud with word-synced karaoke highlighting using the Mnemosyne voice engine.",
+  "descriptionI18n": {
+    "fr": "Une bibliothèque de livres vivante avec lecture vocale. Déposez un EPUB, PDF, DOCX, TXT, HTML, Markdown (ou un dossier entier) et MnemoReader l'extrait et le vectorise dans un coffre Bibliothèque, détecte automatiquement les chapitres, et le lit à voix haute avec surlignage karaoké synchronisé mot à mot grâce au moteur vocal Mnemosyne.",
+    "en": "A living book library with voice reading. Drop an EPUB, PDF, DOCX, TXT, HTML, Markdown (or a whole folder) and MnemoReader extracts and vectorizes it into a Library vault, auto-detects chapters, and reads it aloud with word-synced karaoke highlighting using the Mnemosyne voice engine.",
+    "es": "Una biblioteca de libros viva con lectura por voz. Suelta un EPUB, PDF, DOCX, TXT, HTML, Markdown (o una carpeta entera) y MnemoReader lo extrae y vectoriza en una bóveda Biblioteca, detecta automáticamente los capítulos, y lo lee en voz alta con resaltado karaoke sincronizado palabra por palabra usando el motor de voz de Mnemosyne."
+  },
   "keywords": [
     "epub",
     "pdf",
@@ -26,6 +32,7 @@
     "shell:open"
   ],
   "updateStrategy": "git",
+  "repository": "https://github.com/yaka0007/MnemoReader---MnemosyneOS",
   "entrypoints": {
     "renderer": "index.html"
   },
